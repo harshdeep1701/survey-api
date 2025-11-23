@@ -124,4 +124,47 @@ public class SurveyResponseService {
                 .filter(resp -> resp.getSurvey().getId().equals(surveyId))
                 .collect(Collectors.toList());
     }
+
+    public byte[] exportResponsesToCsv(Long surveyId) {
+        Survey survey = findSurveyOrThrow(surveyId);
+        List<SurveyResponse> responses = getResponses(surveyId);
+
+        StringBuilder csv = new StringBuilder();
+
+        // Header
+        csv.append("Response ID,Date");
+        for (SurveyInput input : survey.getInputs()) {
+            csv.append(",").append(escapeCsv(input.getLabel()));
+        }
+        csv.append("\n");
+
+        // Rows
+        for (SurveyResponse resp : responses) {
+            csv.append(resp.getId()).append(",");
+            csv.append(""); // Date placeholder
+
+            Map<Long, String> answers = resp.getUserInputs().stream()
+                    .collect(Collectors.toMap(
+                            ui -> ui.getInput().getId(),
+                            ui -> ui.getValue() == null ? "" : ui.getValue(),
+                            (v1, v2) -> v1));
+
+            for (SurveyInput input : survey.getInputs()) {
+                String val = answers.getOrDefault(input.getId(), "");
+                csv.append(",").append(escapeCsv(val));
+            }
+            csv.append("\n");
+        }
+
+        return csv.toString().getBytes();
+    }
+
+    private String escapeCsv(String val) {
+        if (val == null)
+            return "";
+        if (val.contains(",") || val.contains("\"") || val.contains("\n")) {
+            return "\"" + val.replace("\"", "\"\"") + "\"";
+        }
+        return val;
+    }
 }

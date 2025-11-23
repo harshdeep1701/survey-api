@@ -33,24 +33,12 @@ public class SurveyResponseController {
         this.surveyResponseService = surveyResponseService;
     }
 
-    @Operation(
-    summary = "Submit survey response",
-    description = "Submit a survey response with optional file attachment.",
-    requestBody = @RequestBody(
-        required = true,
-        content = @Content(
-            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-            schema = @Schema(implementation = SurveyUploadRequest.class),
-            encoding = {
-                @Encoding(name = "response", contentType = "application/json")
-            }
-        )
-    ),
-    responses = {
-        @ApiResponse(responseCode = "200", description = "Survey response submitted successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid input")
-    }
-    )
+    @Operation(summary = "Submit survey response", description = "Submit a survey response with optional file attachment.", requestBody = @RequestBody(required = true, content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = SurveyUploadRequest.class), encoding = {
+            @Encoding(name = "response", contentType = "application/json")
+    })), responses = {
+            @ApiResponse(responseCode = "200", description = "Survey response submitted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input")
+    })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SurveyResponse> submitResponse(
             @PathVariable("surveyId") Long surveyId,
@@ -63,5 +51,14 @@ public class SurveyResponseController {
     @GetMapping
     public ResponseEntity<List<SurveyResponse>> getResponses(@PathVariable("surveyId") Long surveyId) {
         return ResponseEntity.ok(surveyResponseService.getResponses(surveyId));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportResponses(@PathVariable("surveyId") Long surveyId) {
+        byte[] data = surveyResponseService.exportResponsesToCsv(surveyId);
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=responses_" + surveyId + ".csv")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(data);
     }
 }
